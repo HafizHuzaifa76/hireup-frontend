@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-
 import '../core/secure_storage.dart';
 
 class SplashPage extends StatefulWidget {
@@ -12,7 +12,7 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -20,37 +20,31 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1500),
     );
 
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
 
     _controller.forward();
-
+    _checkAuth();
   }
 
-  Future<void> _checkAuth(BuildContext context) async {
-    await Future.delayed(const Duration(milliseconds: 2000));
+  Future<void> _checkAuth() async {
+    await Future.delayed(const Duration(seconds: 2));
 
     final token = await SecureStorage.getToken();
 
     if (token != null && token.isNotEmpty) {
       Navigator.pushReplacementNamed(context, '/jobs');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
     }
-
-    print('token');
-    print(token);
-
-    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -61,8 +55,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    _checkAuth(context);
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -71,52 +63,69 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
           builder: (context, child) {
             return FadeTransition(
               opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 🌟 Animated Circular Logo
+                    // Modern Logo with gradient
                     Container(
-                      height: 110,
-                      width: 110,
+                      height: 100,
+                      width: 100,
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF2563EB),
+                            Color(0xFF3B82F6),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
+                            color: const Color(0xFF2563EB).withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
                           ),
                         ],
                       ),
-                      child: Icon(
-                        Icons.work_rounded,
-                        color: Colors.blue.shade600,
-                        size: 60,
+                      child: const Icon(
+                        Icons.work_outline,
+                        color: Colors.white,
+                        size: 48,
                       ),
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 32),
 
-                    // 🌟 HireUp App Name
-                    Text(
-                      "HireUp",
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                        letterSpacing: 1.2,
+                    // App Name with gradient text
+                    ShaderMask(
+                      shaderCallback: (bounds) {
+                        return const LinearGradient(
+                          colors: [
+                            Color(0xFF2563EB),
+                            Color(0xFF3B82F6),
+                          ],
+                        ).createShader(bounds);
+                      },
+                      child: const Text(
+                        "HireUp",
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
 
+                    // Tagline
                     Text(
-                      "Your Career Starts Here",
+                      "Find your dream job today",
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w400,
                       ),
@@ -124,11 +133,17 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
                     const SizedBox(height: 40),
 
-                    // Small loading indicator
-                    const SizedBox(
-                      height: 30,
-                      width: 30,
-                      child: CircularProgressIndicator(strokeWidth: 3),
+                    // Modern loading indicator
+                    SizedBox(
+                      width: 60,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF2563EB).withOpacity(0.8),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        minHeight: 4,
+                      ),
                     ),
                   ],
                 ),

@@ -1,8 +1,16 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:hire_up_web/core/secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
+  static BuildContext? _context;
+
+  // Set context when app starts (call this in main.dart or root widget)
+  static void setContext(BuildContext context) {
+    _context = context;
+  }
+
   // -----------------------------
   // Load token automatically
   // -----------------------------
@@ -21,23 +29,16 @@ class ApiClient {
   static Future<http.Response> get(String url) async {
     final headers = await _buildHeaders();
 
-    print('headers');
-    print(headers);
-
     try {
       final response = await http.get(
         Uri.parse(url),
         headers: headers,
       );
 
-      print('response.headers');
-      print(response.headers);
 
       _handleErrors(response);
       return response;
     } on Exception catch (e) {
-      print('Exception');
-      print(e);
       rethrow;
     }
   }
@@ -62,7 +63,7 @@ class ApiClient {
   }
 
   // -----------------------------
-  // POST
+  // POST without token (for login/signup)
   // -----------------------------
   static Future<http.Response> postWithoutToken(
       String url, {
@@ -116,14 +117,36 @@ class ApiClient {
   }
 
   // -----------------------------
-  // Error Handler
+  // Handle 401 Unauthorized
+  // -----------------------------
+  static void _handleUnauthorized() async {
+    // Clear token from storage
+    await SecureStorage.removeToken();
+
+    // Navigate to login screen if context is available
+    if (_context != null && _context!.mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(_context!).pushNamedAndRemoveUntil(
+          '/login',
+              (route) => false,
+        );
+      });
+    }
+  }
+
+  // -----------------------------
+  // Handle API Errors
   // -----------------------------
   static void _handleErrors(http.Response res) {
-    print('res.statusCode: ${res.statusCode}');
-    if (res.statusCode >= 400) {
+
+    if (res.statusCode == 401) {
+      _handleUnauthorized();
+      throw Exception("Unauthorized: Please login again");
+    } else if (res.statusCode >= 400) {
       throw Exception(
         "API Error: ${res.statusCode}\n${res.body}",
       );
     }
   }
+
 }

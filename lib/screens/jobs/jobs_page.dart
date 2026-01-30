@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../widgets/glass_card.dart';
-import '../../../widgets/neumorphic_button.dart';
+import 'package:hire_up_web/screens/jobs/widgets/job_card.dart';
+import 'package:hire_up_web/widgets/primary_button.dart';
 import '../../models/job.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/job_provider.dart';
@@ -13,11 +13,13 @@ class JobsPage extends ConsumerStatefulWidget {
   const JobsPage({super.key});
 
   @override
-  ConsumerState createState() => _JobsPageState();
+  ConsumerState<JobsPage> createState() => _JobsPageState();
 }
 
 class _JobsPageState extends ConsumerState<JobsPage> {
-  final searchCtrl = TextEditingController();
+  final _searchController = TextEditingController();
+  String _selectedFilter = 'all';
+  final List<String> _filters = ['all', 'remote', 'full-time', 'part-time'];
 
   @override
   void initState() {
@@ -31,119 +33,282 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   Widget build(BuildContext context) {
     final jobs = ref.watch(jobListProvider);
     final user = ref.watch(authControllerProvider.notifier).user;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text("Job Marketplace", style: TextStyle(fontSize: 26)),
+        title: const Text(
+          "Find Your Dream Job",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.person_outline),
-            onPressed: () => Navigator.pushNamed(context, "/profile"),
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {},
           ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          ),
+          const SizedBox(width: 16),
         ],
       ),
-
       floatingActionButton: user?.role == "employer"
           ? FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, "/add-job"),
-        label: Text("Post Job"),
-        icon: Icon(Icons.add),
+        onPressed: () => Navigator.pushNamed(context, '/add-job'),
+        backgroundColor: const Color(0xFF2563EB),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text("Post Job"),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       )
           : null,
-
       body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            GlassCard(
-              child: Row(
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth > 1200 ? 120 : 24,
+          vertical: 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Section
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: searchCtrl,
-                      label: "Search jobs...",
+                  Text(
+                    "Browse Opportunities",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  NeuButton(
-                    text: "Search",
-                    onTap: () {
-                      ref.read(jobControllerProvider.notifier)
-                          .searchJobs(searchCtrl.text);
-                    },
-                  )
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Discover jobs that match your skills",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 32),
 
-            const SizedBox(height: 30),
+              // Search and Filter Section
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            controller: _searchController,
+                            hintText: "Search jobs, companies, or keywords",
+                            prefixIcon: Icon(Icons.search),
+                            onChanged: (value) {
+                              ref.read(jobControllerProvider.notifier).searchJobs(value);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        PrimaryButton(
+                          text: "Search",
+                          icon: Icons.search,
+                          onPressed: () {
+                            ref.read(jobControllerProvider.notifier)
+                                .searchJobs(_searchController.text);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  int columns = constraints.maxWidth > 1200
-                      ? 4
-                      : constraints.maxWidth > 900
-                      ? 3
-                      : constraints.maxWidth > 600
-                      ? 2
-                      : 1;
+                    // Filter Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _filters.map((filter) {
+                          final isSelected = _selectedFilter == filter;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: FilterChip(
+                              label: Text(
+                                filter == 'all'
+                                    ? 'All Jobs'
+                                    : filter.replaceAll(' - ', ' ').titleCase,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedFilter = selected ? filter : 'all';
+                                });
+                              },
+                              backgroundColor: Colors.white,
+                              selectedColor: const Color(0xFF2563EB),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? const Color(0xFF2563EB)
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
 
-                  return GridView.count(
-                    crossAxisCount: columns,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 20,
-                    children: jobs.map((j) => jobCard(context, j)).toList(),
+              // Jobs Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "${jobs.length} Jobs Found",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  PopupMenuButton(
+                    icon: const Icon(Icons.filter_list_outlined),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'newest',
+                        child: Text("Newest First"),
+                      ),
+                      const PopupMenuItem(
+                        value: 'salary',
+                        child: Text("Highest Salary"),
+                      ),
+                      const PopupMenuItem(
+                        value: 'relevant',
+                        child: Text("Most Relevant"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Jobs Grid
+              jobs.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.work_outline,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "No jobs found",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Try adjusting your search or filter",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  : GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: screenWidth > 1200 ? 3 :
+                  screenWidth > 768 ? 2 : 1,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
+                  childAspectRatio: 1.2,
+                ),
+                itemCount: jobs.length,
+                itemBuilder: (context, index) {
+                  return JobCard(
+                    job: jobs[index],
+                    onTap: () => _showJobDetail(context, jobs[index]),
+                    onApply: user?.role == "job_seeker"
+                        ? () => _applyForJob(context, jobs[index].id)
+                        : null,
                   );
                 },
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget jobCard(BuildContext context, JobModel job) {
-    final user = ref.watch(authControllerProvider.notifier).user;
-
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => JobDetailPage(job: job))),
-      // onTap: () => Navigator.pushNamed(context, "/job/${job.id}"),
-      child: GlassCard(
-        padding: EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(job.title,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 6),
-            Text(job.company, style: TextStyle(color: Colors.black54)),
-            SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: job.tags
-                  .map((t) => Chip(
-                label: Text(t),
-                backgroundColor: Colors.blue.shade50,
-              ))
-                  .toList(),
-            ),
-            Spacer(),
-            Text(
-              "${job.startingSalary} - ${job.endingSalary} PKR",
-              style: TextStyle(color: Colors.green.shade700),
-            ),
-            SizedBox(height: 14),
-            if (user?.role == "job_seeker")
-              NeuButton(
-                text: "Apply",
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ApplyPage(jobId: job.id))),
-              )
-          ],
-        ),
+  void _showJobDetail(BuildContext context, JobModel job) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JobDetailPage(job: job),
       ),
     );
+  }
+
+  void _applyForJob(BuildContext context, String jobId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ApplyPage(jobId: jobId),
+      ),
+    );
+  }
+}
+
+// Extension for title case
+extension StringExtension on String {
+  String get titleCase {
+    if (isEmpty) return this;
+    return split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }

@@ -1,105 +1,95 @@
 import 'package:flutter/material.dart';
 
-class AppTextField extends StatefulWidget {
-  final String label;
-  final TextEditingController controller;
-  final bool obscure;
-  final TextInputType keyboardType;
-  final IconData? prefixIcon;
-  final String? hint;
-  final Function(String)? onChanged;
-
-  final int? minLines;
+class AppTextField extends StatelessWidget {
+  final TextEditingController? controller;
+  final String hintText;
+  final String? labelText;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final bool obscureText;
+  final TextInputType? keyboardType;
   final int? maxLines;
+  final int? minLines;
+  final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onChanged;
+  final bool enabled;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const AppTextField({
     super.key,
-    required this.label,
-    required this.controller,
-    this.obscure = false,
-    this.keyboardType = TextInputType.text,
+    this.controller,
+    this.hintText = '',
+    this.labelText,
     this.prefixIcon,
-    this.hint,
-    this.onChanged,
+    this.suffixIcon,
+    this.obscureText = false,
+    this.keyboardType,
+    this.maxLines = 1,
     this.minLines,
-    this.maxLines,
+    this.validator,
+    this.onChanged,
+    this.enabled = true,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
-  State<AppTextField> createState() => _AppTextFieldState();
-}
-
-class _AppTextFieldState extends State<AppTextField> {
-  bool hide = true;
-
-  @override
-  void initState() {
-    super.initState();
-    hide = widget.obscure;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final bool isPassword = widget.obscure;
-    final int? minL = isPassword ? 1 : widget.minLines;
-    final int? maxL = isPassword ? 1 : widget.maxLines;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: theme.textTheme.bodyLarge!.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      minLines: minLines,
+      validator: validator,
+      onChanged: onChanged,
+      enabled: enabled,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: const TextStyle(
+        fontSize: 16,
+        color: Color(0xFF1E293B),
+      ),
+      decoration: InputDecoration(
+        hintText: hintText,
+        labelText: labelText,
+        hintStyle: TextStyle(
+          color: Colors.grey.shade500,
         ),
-        const SizedBox(height: 6),
-
-        Container(
-          decoration: BoxDecoration(
-            color: theme.cardColor.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: TextField(
-            controller: widget.controller,
-            obscureText: isPassword ? hide : false,
-            keyboardType: widget.keyboardType,
-            onChanged: widget.onChanged,
-            minLines: minL,
-            maxLines: maxL,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              hintText: widget.hint,
-              border: InputBorder.none,
-
-              prefixIcon: widget.prefixIcon == null
-                  ? null
-                  : Icon(widget.prefixIcon, size: 22),
-
-              suffixIcon: isPassword
-                  ? IconButton(
-                icon: Icon(
-                  hide ? Icons.visibility_off : Icons.visibility,
-                ),
-                onPressed: () => setState(() => hide = !hide),
-              )
-                  : null,
-            ),
-          ),
+        labelStyle: const TextStyle(
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
         ),
-      ],
+        prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: enabled ? Colors.white : Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: maxLines! > 1 ? 16 : 14,
+        ),
+      ),
     );
   }
 }
